@@ -1,0 +1,335 @@
+/* ─────────────────────────────────────────────
+   Roamly — "field notes" design system
+   Paper, ink, and one postal-red accent.
+   ───────────────────────────────────────────── */
+:root {
+  --paper: #f2ece0;
+  --paper-deep: #e8e0cf;
+  --card: #fbf8f1;
+  --ink: #1d1b18;
+  --ink-soft: #5a554c;
+  --ink-faint: #9a9284;
+  --rule: #d6cdb9;
+  --stamp: #c8401c;
+  --stamp-soft: #f4d9cc;
+  --sea: #2c5a5e;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --shadow-hard: 4px 4px 0 var(--ink);
+  --shadow-hard-sm: 2px 2px 0 var(--ink);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--paper);
+  /* faint dotted grid, like a notebook page */
+  background-image: radial-gradient(var(--rule) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+::selection {
+  background: var(--stamp);
+  color: var(--card);
+}
+
+:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 2px;
+}
+
+/* ── Shared primitives ── */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--ink);
+  color: var(--card);
+  border: 1.5px solid var(--ink);
+  padding: 0.7rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--stamp);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-ink:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--stamp);
+}
+
+.btn-ink:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--stamp);
+}
+
+.btn-ink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  padding: 0.65rem 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--paper-deep);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--ink);
+  padding: 0.45rem 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.15s;
+}
+
+.field textarea {
+  border: 1.5px solid var(--ink);
+  padding: 0.7rem;
+  resize: vertical;
+  line-height: 1.55;
+  background: repeating-linear-gradient(
+    transparent 0 1.55em,
+    var(--rule) 1.55em calc(1.55em + 1px)
+  );
+  background-attachment: local;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--stamp);
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.65rem 0.85rem;
+  border-left: 3px solid currentColor;
+  margin-bottom: 1.1rem;
+  line-height: 1.45;
+}
+
+.note-error {
+  color: var(--stamp);
+  background: var(--stamp-soft);
+}
+
+.note-ok {
+  color: var(--sea);
+  background: #d9e6e3;
+}
+
+.note-warn {
+  color: #8a5a00;
+  background: #f5e6c4;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────────
+   Auth pages (login + signup share this)
+   ───────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+}
+
+.auth-side {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-logo {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+.auth-logo span {
+  color: var(--stamp);
+}
+
+.auth-quote {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 4.5vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  max-width: 12ch;
+}
+
+.auth-quote em {
+  color: var(--stamp);
+}
+
+.auth-side-foot {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* decorative postmark on the dark panel */
+.auth-postmark {
+  position: absolute;
+  top: 18%;
+  right: -40px;
+  width: 210px;
+  height: 210px;
+  border: 2px dashed rgba(242, 236, 224, 0.25);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transform: rotate(-14deg);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: rgba(242, 236, 224, 0.35);
+  text-align: center;
+  line-height: 1.8;
+}
+
+.auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 2.4rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0.6rem 0 0.5rem;
+}
+
+.auth-sub {
+  color: var(--ink-soft);
+  margin-bottom: 2rem;
+}
+
+.auth-card .btn-ink {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+}
+
+.auth-switch {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--rule);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.auth-switch a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--stamp);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+  .auth-side {
+    padding: 2rem 1.5rem;
+    min-height: 240px;
+  }
+  .auth-quote {
+    font-size: 2.2rem;
+  }
+  .auth-postmark {
+    display: none;
+  }
+}

@@ -1,0 +1,70 @@
+<div class="auth-page">
+  <aside class="auth-side">
+    <div class="auth-logo">Roamly<span>.</span></div>
+
+    <div class="auth-postmark">
+      ROAMLY POST<br />★ ★ ★<br />AIR MAIL
+    </div>
+
+    <h2 class="auth-quote">Every trip leaves a <em>trace.</em></h2>
+
+    <div class="auth-side-foot">
+      <span>Field notes</span>
+      <span>Vol. 01</span>
+    </div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <span class="mono-label">Entry · Sign in</span>
+      <h1>Welcome back, traveller.</h1>
+      <p class="auth-sub">Pick up where your last journey left off.</p>
+
+      @if (sessionExpiredMessage()) {
+        <div class="note note-warn">{{ sessionExpiredMessage() }}</div>
+      }
+
+      @if (error()) {
+        <div class="note note-error">{{ error() }}</div>
+      }
+
+      <form (ngSubmit)="onSubmit()">
+        <label class="field">
+          <span class="mono-label">Username</span>
+          <input
+            type="text"
+            placeholder="your handle"
+            [value]="username()"
+            (input)="onUsernameChange($any($event.target).value)"
+            required
+            autocomplete="username"
+          />
+        </label>
+
+        <label class="field">
+          <span class="mono-label">Password</span>
+          <input
+            type="password"
+            placeholder="••••••••"
+            [value]="password()"
+            (input)="onPasswordChange($any($event.target).value)"
+            required
+            autocomplete="current-password"
+          />
+        </label>
+
+        <button type="submit" class="btn-ink" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner"></span> Checking passport
+          } @else {
+            Sign in →
+          }
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        New here? <a routerLink="/signup">Open a travel journal</a>
+      </p>
+    </div>
+  </main>
+</div>

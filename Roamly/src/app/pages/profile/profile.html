@@ -1,0 +1,228 @@
+<div class="page">
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-top">
+        <a class="link-btn" routerLink="/home">← Back to feed</a>
+        <div class="masthead-user">
+          <span class="mono-label">Signed in as</span>
+          <a class="handle handle-link" routerLink="/profile">&#64;{{ loggedInUsername() }}</a>
+          <button type="button" class="link-btn" (click)="logout()">Sign out</button>
+        </div>
+      </div>
+
+      <div class="masthead-main">
+        <h1 class="logo">Roamly<span>.</span></h1>
+        <p class="tagline">Traveller dossier &amp; kept field notes.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="profile-wrap">
+    <!-- Dossier Header Card -->
+    <section class="dossier">
+      <div class="dossier-head">
+        <div>
+          <span class="mono-label">{{ isOwnProfile() ? 'Your field logbook' : 'Traveller dossier' }}</span>
+          <h2 class="dossier-name">&#64;{{ profileUsername() }}</h2>
+        </div>
+        <button type="button" class="btn-ghost" (click)="refreshAll()" [disabled]="loadingProfile() || loadingPosts()">
+          {{ loadingProfile() ? 'Syncing…' : 'Refresh ↻' }}
+        </button>
+      </div>
+
+      @if (profileError()) {
+        <div class="note note-error">{{ profileError() }}</div>
+      }
+
+      <div class="stats-grid">
+        <div class="stat-card accent">
+          <span class="mono-label">Keeps received</span>
+          <p class="stat-number">
+            <span class="heart">♥</span>
+            {{ loadingProfile() ? '—' : totalLikesReceived() }}
+          </p>
+          <p class="stat-caption">total likes across all entries</p>
+        </div>
+
+        <div class="stat-card">
+          <span class="mono-label">Entries filed</span>
+          <p class="stat-number">{{ padId(entriesCount()) }}</p>
+          <p class="stat-caption">published travel stories</p>
+        </div>
+
+        @if (isOwnProfile()) {
+          <div class="stat-card">
+            <span class="mono-label">Kept collection</span>
+            <p class="stat-number">{{ padId(keptPosts().length) }}</p>
+            <p class="stat-caption">stories saved for later</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="tabs" aria-label="Profile sections">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'entries'"
+        (click)="activeTab.set('entries')"
+      >
+        {{ isOwnProfile() ? 'My entries' : 'Entries' }} ({{ authoredPosts().length }})
+      </button>
+
+      @if (isOwnProfile()) {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'kept'"
+          (click)="activeTab.set('kept')"
+        >
+          ♥ Kept collection ({{ keptPosts().length }})
+        </button>
+      }
+    </nav>
+
+    <!-- Tab Content -->
+    @if (loadingPosts()) {
+      <div class="empty-state">
+        <span class="mono-label">Opening the archive…</span>
+      </div>
+    } @else {
+      @let activeList = activeTab() === 'kept' ? keptPosts() : authoredPosts();
+
+      @if (activeList.length === 0) {
+        <div class="empty-state">
+          @if (activeTab() === 'kept') {
+            <p class="empty-title">Your kept collection is empty.</p>
+            <p class="empty-copy">Tap <strong>♡ Keep</strong> on any entry in the feed to save it to your personal collection.</p>
+            <a class="btn-ink" routerLink="/home">Browse the feed →</a>
+          } @else {
+            <p class="empty-title">No entries filed yet.</p>
+            <p class="empty-copy">
+              {{ isOwnProfile() ? 'Head back to the feed to write your first field note.' : 'This traveller has not published any entries yet.' }}
+            </p>
+            <a class="btn-ink" routerLink="/home">Return to feed →</a>
+          }
+        </div>
+      } @else {
+        <div class="cards-grid">
+          @for (post of activeList; track post.id) {
+            <article class="mini-card" (click)="openPostModal(post)">
+              @if (getPostImages(post); as imgs) {
+                @if (imgs.length > 0) {
+                  <div class="mini-thumb">
+                    <img [src]="imgs[0]" [alt]="post.title || 'Travel photo'" loading="lazy" (error)="onImageError($event)" />
+                    @if (imgs.length > 1) {
+                      <span class="photo-badge">{{ imgs.length }} photos</span>
+                    }
+                  </div>
+                }
+              }
+
+              <div class="mini-body">
+                <div class="mini-meta">
+                  <span class="mono-label">No. {{ padId(post.id) }}</span>
+                  <span class="entry-dot">·</span>
+                  <a
+                    class="author-link"
+                    [routerLink]="['/profile', extractRawUsername(post)]"
+                    (click)="$event.stopPropagation()"
+                  >
+                    {{ getPostAuthor(post) }}
+                  </a>
+                </div>
+
+                @if (post.location) {
+                  <p class="mini-place">↳ {{ post.location }}</p>
+                }
+
+                <h3 class="mini-title">{{ post.title || 'Untitled entry' }}</h3>
+
+                @if (getPostContent(post)) {
+                  <p class="mini-preview">{{ getPostPreview(post) }}</p>
+                }
+
+                <div class="mini-foot">
+                  <button
+                    type="button"
+                    class="keep-btn"
+                    [class.kept]="keepsService.isKept(post.id)"
+                    (click)="toggleKeep(post, $event)"
+                  >
+                    <span class="heart">{{ keepsService.isKept(post.id) ? '♥' : '♡' }}</span>
+                    {{ keepsService.isKept(post.id) ? 'Kept' : 'Keep' }}
+                    @if (keepsService.getLikesCount(post) > 0) {
+                      <span class="keep-count">· {{ keepsService.getLikesCount(post) }}</span>
+                    }
+                  </button>
+                  <span class="read-hint">Read entry ↗</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+  </main>
+
+  <!-- Reader Modal -->
+  @if (selectedPost(); as sp) {
+    <div class="reader-backdrop" (click)="closePostModal()">
+      <article class="reader" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <button class="reader-close" (click)="closePostModal()" aria-label="Close">✕</button>
+
+        @if (getPostImages(sp); as imgs) {
+          @if (imgs.length > 0) {
+            <div class="reader-media">
+              <img
+                class="reader-img"
+                [src]="imgs[modalImageIndex()] ?? imgs[0]"
+                [alt]="sp.title || 'Travel photograph'"
+                (error)="onImageError($event)"
+              />
+              @if (imgs.length > 1) {
+                <button type="button" class="reader-nav prev" (click)="stepModalImage(-1, imgs.length)" aria-label="Previous photo">‹</button>
+                <button type="button" class="reader-nav next" (click)="stepModalImage(1, imgs.length)" aria-label="Next photo">›</button>
+                <span class="reader-counter">{{ modalImageIndex() + 1 }} / {{ imgs.length }}</span>
+              }
+            </div>
+          }
+        }
+
+        <div class="reader-body">
+          <div class="mini-meta">
+            <span class="mono-label">No. {{ padId(sp.id) }}</span>
+            <span class="entry-dot">·</span>
+            <span class="mono-label">{{ getPostAuthor(sp) }}</span>
+            @if (getPostExactDate(sp)) {
+              <span class="entry-dot">·</span>
+              <time class="mono-label">{{ getPostExactDate(sp) }}</time>
+            }
+          </div>
+          @if (sp.location) {
+            <p class="mini-place">↳ {{ sp.location }}</p>
+          }
+          <h2 class="reader-title">{{ sp.title }}</h2>
+          <p class="reader-text">{{ getPostContent(sp) }}</p>
+
+          <div class="reader-actions">
+            <button
+              type="button"
+              class="keep-btn"
+              [class.kept]="keepsService.isKept(sp.id)"
+              (click)="toggleKeep(sp, $event)"
+            >
+              <span class="heart">{{ keepsService.isKept(sp.id) ? '♥' : '♡' }}</span>
+              {{ keepsService.isKept(sp.id) ? 'Kept in collection' : 'Keep this entry' }}
+              @if (keepsService.getLikesCount(sp) > 0) {
+                <span class="keep-count">· {{ keepsService.getLikesCount(sp) }}</span>
+              }
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+  }
+</div>

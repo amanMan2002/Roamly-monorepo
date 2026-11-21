@@ -1,0 +1,82 @@
+<div class="auth-page">
+  <aside class="auth-side">
+    <div class="auth-logo">Roamly<span>.</span></div>
+
+    <div class="auth-postmark">
+      FIRST ENTRY<br />★ ★ ★<br />WELCOME
+    </div>
+
+    <h2 class="auth-quote">Collect places, not <em>things.</em></h2>
+
+    <div class="auth-side-foot">
+      <span>Field notes</span>
+      <span>Vol. 01</span>
+    </div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <span class="mono-label">Entry · New journal</span>
+      <h1>Start your travel journal.</h1>
+      <p class="auth-sub">One account, every story you bring back.</p>
+
+      @if (error()) {
+        <div class="note note-error">{{ error() }}</div>
+      }
+
+      @if (success()) {
+        <div class="note note-ok">{{ success() }}</div>
+      }
+
+      <form (ngSubmit)="onSubmit()">
+        <label class="field">
+          <span class="mono-label">Username</span>
+          <input
+            type="text"
+            placeholder="pick a handle"
+            [value]="username()"
+            (input)="onUsernameChange($any($event.target).value)"
+            required
+            autocomplete="username"
+          />
+        </label>
+
+        <label class="field">
+          <span class="mono-label">Password</span>
+          <input
+            type="password"
+            placeholder="something memorable"
+            [value]="password()"
+            (input)="onPasswordChange($any($event.target).value)"
+            required
+            autocomplete="new-password"
+          />
+        </label>
+
+        <label class="field">
+          <span class="mono-label">Confirm password</span>
+          <input
+            type="password"
+            placeholder="once more"
+            [value]="confirmPassword()"
+            (input)="onConfirmPasswordChange($any($event.target).value)"
+            required
+            autocomplete="new-password"
+          />
+        </label>
+
+        <button type="submit" class="btn-ink" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner"></span> Stamping passport
+          } @else {
+            Create account →
+          }
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        Already roaming? <a routerLink="/login">Sign in</a>
+      </p>
+    </div>
+  </main>
+</div>

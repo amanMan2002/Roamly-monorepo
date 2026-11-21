@@ -1,0 +1,552 @@
+<div class="page">
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-top">
+        <span class="mono-label">Vol. 01 · Community edition</span>
+        <div class="masthead-user">
+          <span class="mono-label">Signed in as</span>
+          <a class="handle handle-link" routerLink="/profile" title="Open your profile & kept collection">&#64;{{ username() }}</a>
+          <button type="button" class="link-btn" (click)="logout()">Sign out</button>
+        </div>
+      </div>
+
+      <div class="masthead-main">
+        <h1 class="logo">Roamly<span>.</span></h1>
+        <p class="tagline">Field notes &amp; photographs from fellow travellers.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-block">
+        <span class="mono-label">The logbook</span>
+        <p class="big-number">{{ padId(posts().length) }}</p>
+        <p class="sidebar-copy">entries filed by the community so far.</p>
+      </div>
+
+      <div class="sidebar-block">
+        <button type="button" class="btn-ink full" (click)="toggleCreatePost()">
+          {{ isCreatePostOpen() ? 'Close the notebook' : 'Write an entry +' }}
+        </button>
+        <button type="button" class="btn-ai full" (click)="toggleAiDrawer()">
+          ✦ AI Companion
+        </button>
+        <a class="btn-ghost full btn-link" routerLink="/profile">
+          ♥ Profile &amp; Keeps ({{ keepsService.keptCount() }})
+        </a>
+        <button type="button" class="btn-ghost full" (click)="fetchPosts()" [disabled]="loadingPosts()">
+          {{ loadingPosts() ? 'Fetching…' : 'Refresh feed ↻' }}
+        </button>
+      </div>
+
+      <p class="sidebar-foot">
+        Post a place you've been. Add a photo if you have one — the rest of us want to see it.
+      </p>
+    </aside>
+
+    <!-- Feed -->
+    <section class="feed">
+
+      <!-- Composer -->
+      @if (isCreatePostOpen()) {
+        <section class="composer">
+          <div class="composer-head">
+            <span class="mono-label">New entry</span>
+            <span class="mono-label">No. {{ padId(posts().length + 1) }}</span>
+          </div>
+
+          @if (submitError()) {
+            <div class="note note-error">{{ submitError() }}</div>
+          }
+          @if (submitSuccess()) {
+            <div class="note note-ok">{{ submitSuccess() }}</div>
+          }
+
+          <form (ngSubmit)="createPost()">
+            <label class="field">
+              <span class="mono-label">Title</span>
+              <input
+                class="title-input"
+                type="text"
+                placeholder="Sunrise over the Matterhorn"
+                [value]="postTitle()"
+                (input)="postTitle.set($any($event.target).value)"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span class="mono-label">Where</span>
+              <input
+                type="text"
+                placeholder="Zermatt, Switzerland"
+                [value]="postLocation()"
+                (input)="postLocation.set($any($event.target).value)"
+              />
+            </label>
+
+            <label class="field">
+              <div class="field-label-row">
+                <span class="mono-label">The story</span>
+                <button
+                  type="button"
+                  class="btn-ai-inline"
+                  (click)="generateAiStory()"
+                  [disabled]="aiStoryLoading()"
+                  title="Generate a draft story using AI based on title or location"
+                >
+                  @if (aiStoryLoading()) {
+                    <span class="spinner"></span> Drafting story…
+                  } @else {
+                    ✦ Draft with AI
+                  }
+                </button>
+              </div>
+
+              @if (aiStoryError()) {
+                <div class="note note-warn">{{ aiStoryError() }}</div>
+              }
+
+              <textarea
+                rows="5"
+                placeholder="What happened, what you ate, what you'd tell a friend going next month…"
+                [value]="postContent()"
+                (input)="postContent.set($any($event.target).value)"
+                required
+              ></textarea>
+            </label>
+
+            <div class="field">
+              <span class="mono-label">Photographs · {{ postImages().length }}/{{ MAX_IMAGES }}</span>
+
+              <div class="photo-row">
+                <label class="btn-ghost upload-btn">
+                  Upload files
+                  <input type="file" accept="image/*" multiple (change)="onFilesSelected($event)" hidden />
+                </label>
+                <span class="or">or</span>
+                <input
+                  class="url-input"
+                  type="url"
+                  placeholder="paste an image link"
+                  [value]="postImageUrl()"
+                  (input)="postImageUrl.set($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); addImageFromUrl()"
+                />
+                <button type="button" class="btn-ghost" (click)="addImageFromUrl()" [disabled]="!postImageUrl().trim()">
+                  Add
+                </button>
+              </div>
+
+              <div class="samples">
+                <span class="mono-label">Try one:</span>
+                @for (sample of sampleImages; track sample.label) {
+                  <button type="button" class="sample" (click)="setPresetImage(sample.url)">
+                    {{ sample.label }}
+                  </button>
+                }
+              </div>
+
+              @if (postImages().length > 0) {
+                <ul class="thumbs">
+                  @for (img of postImages(); track img; let i = $index) {
+                    <li>
+                      <figure class="thumb polaroid">
+                        <img [src]="img" [alt]="'Selected photograph ' + (i + 1)" (error)="onImageError($event)" />
+                        <figcaption>
+                          <span>{{ i === 0 ? 'cover' : 'no. ' + (i + 1) }}</span>
+                          <button type="button" class="link-btn" (click)="removeImage(i)">remove</button>
+                        </figcaption>
+                      </figure>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <div class="composer-actions">
+              <button type="button" class="btn-ghost" (click)="toggleCreatePost()" [disabled]="submitting()">
+                Discard
+              </button>
+              <button type="submit" class="btn-ink" [disabled]="submitting()">
+                @if (submitting()) {
+                  <span class="spinner"></span> Filing entry
+                } @else {
+                  File this entry →
+                }
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      <!-- States -->
+      @if (loadingPosts()) {
+        <div class="state">
+          <span class="spinner"></span>
+          <span class="mono-label">Sorting through the mailbag…</span>
+        </div>
+      }
+
+      @if (!loadingPosts() && errorLoading()) {
+        <div class="state state-error">
+          <p class="state-title">The post didn't arrive.</p>
+          <p>{{ errorLoading() }}</p>
+          <button class="btn-ink" (click)="fetchPosts()">Try again</button>
+        </div>
+      }
+
+      @if (!loadingPosts() && !errorLoading() && posts().length === 0) {
+        <div class="state">
+          <p class="state-title">The logbook is empty.</p>
+          <p>Nobody has written anything yet. Be the first entry.</p>
+          <button class="btn-ink" (click)="isCreatePostOpen.set(true)">Write the first entry</button>
+        </div>
+      }
+
+      <!-- Entries -->
+      @if (!loadingPosts() && posts().length > 0) {
+        @for (post of posts(); track post.id; let even = $even) {
+          <article class="entry" [class.has-photo]="hasImage(post)">
+            <!-- Postmark timestamp -->
+            @if (getPostStamp(post); as stamp) {
+              <div class="postmark" [title]="getPostExactDate(post)">
+                <span class="pm-month">{{ stamp.month }}</span>
+                <span class="pm-day">{{ stamp.day }}</span>
+                <span class="pm-year">{{ stamp.year }}</span>
+              </div>
+            }
+
+            <header class="entry-head">
+              <span class="entry-no">No. {{ padId(post.id) }}</span>
+              <span class="entry-dot">·</span>
+              @if (getPostAuthorUsername(post); as authorUname) {
+                <a class="entry-author author-link" [routerLink]="['/profile', authorUname]">{{ getPostAuthor(post) }}</a>
+              } @else {
+                <span class="entry-author">{{ getPostAuthor(post) }}</span>
+              }
+              @if (getPostTimestamp(post)) {
+                <span class="entry-dot">·</span>
+                <time class="entry-time" [title]="getPostExactDate(post)">{{ getPostTimestamp(post) }}</time>
+              }
+            </header>
+
+            @if (post.location) {
+              <p class="entry-place">↳ {{ post.location }}</p>
+            }
+
+            @if (post.title) {
+              <h2 class="entry-title">{{ post.title }}</h2>
+            }
+
+            <div class="entry-body">
+              @if (getPostImages(post); as imgs) {
+                @if (imgs.length > 0) {
+                  <div class="gallery">
+                    <figure class="polaroid" [class.tilt-l]="even" [class.tilt-r]="!even" (click)="openPostModal(post, 0)">
+                      <img
+                        [src]="imgs[0]"
+                        [alt]="post.title || 'Travel photograph'"
+                        loading="lazy"
+                        (error)="onImageError($event)"
+                      />
+                      <figcaption>
+                        {{ post.location || post.title || 'somewhere' }}
+                        @if (imgs.length > 1) {
+                          <span class="photo-count">1 / {{ imgs.length }}</span>
+                        }
+                      </figcaption>
+                    </figure>
+
+                    @if (imgs.length > 1) {
+                      <ul class="gallery-strip">
+                        @for (img of imgs.slice(1, 4); track img; let i = $index) {
+                          <li>
+                            <button type="button" class="strip-btn" (click)="openPostModal(post, i + 1)" [attr.aria-label]="'View photo ' + (i + 2)">
+                              <img [src]="img" alt="" loading="lazy" (error)="onImageError($event)" />
+                              @if (i === 2 && imgs.length > 4) {
+                                <span class="strip-more">+{{ imgs.length - 4 }}</span>
+                              }
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+              }
+
+              @if (getPostContent(post)) {
+                <p class="entry-text">{{ getPostPreview(post) }}</p>
+              }
+            </div>
+
+            <footer class="entry-foot">
+              <button
+                type="button"
+                class="keep-btn"
+                [class.kept]="isLiked(post.id)"
+                (click)="toggleLike(post)"
+                [attr.aria-pressed]="isLiked(post.id)"
+              >
+                <span class="heart">{{ isLiked(post.id) ? '♥' : '♡' }}</span>
+                {{ isLiked(post.id) ? 'Kept' : 'Keep' }}
+                @if (getLikesCount(post) > 0) {
+                  <span>· {{ getLikesCount(post) }}</span>
+                }
+              </button>
+              <button type="button" class="link-btn" (click)="openPostModal(post)">Read full entry ↗</button>
+            </footer>
+          </article>
+        }
+      }
+    </section>
+  </main>
+
+  <!-- Reader modal -->
+  @if (selectedPost(); as sp) {
+    <div class="reader-backdrop" (click)="closePostModal()">
+      <article class="reader" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <button class="reader-close" (click)="closePostModal()" aria-label="Close">✕</button>
+
+        @if (getPostImages(sp); as imgs) {
+          @if (imgs.length > 0) {
+            <div class="reader-media">
+              <img
+                class="reader-img"
+                [src]="imgs[modalImageIndex()] ?? imgs[0]"
+                [alt]="sp.title || 'Travel photograph'"
+                (error)="onImageError($event)"
+              />
+              @if (imgs.length > 1) {
+                <button type="button" class="reader-nav prev" (click)="stepModalImage(-1, imgs.length)" aria-label="Previous photo">‹</button>
+                <button type="button" class="reader-nav next" (click)="stepModalImage(1, imgs.length)" aria-label="Next photo">›</button>
+                <span class="reader-counter">{{ modalImageIndex() + 1 }} / {{ imgs.length }}</span>
+              }
+            </div>
+            @if (imgs.length > 1) {
+              <ul class="reader-thumbs">
+                @for (img of imgs; track img; let i = $index) {
+                  <li>
+                    <button type="button" class="strip-btn" [class.active]="i === modalImageIndex()" (click)="modalImageIndex.set(i)" [attr.aria-label]="'Show photo ' + (i + 1)">
+                      <img [src]="img" alt="" (error)="onImageError($event)" />
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+
+        <div class="reader-body">
+          <div class="entry-head">
+            <span class="entry-no">No. {{ padId(sp.id) }}</span>
+            <span class="entry-dot">·</span>
+            <span class="entry-author">{{ getPostAuthor(sp) }}</span>
+            @if (getPostExactDate(sp)) {
+              <span class="entry-dot">·</span>
+              <time class="entry-time">{{ getPostExactDate(sp) }}</time>
+            }
+          </div>
+          @if (sp.location) {
+            <p class="entry-place">↳ {{ sp.location }}</p>
+          }
+          <h2 class="reader-title">{{ sp.title }}</h2>
+          <p class="reader-text">{{ getPostContent(sp) }}</p>
+        </div>
+      </article>
+    </div>
+  }
+
+  <!-- AI Companion Slide-over Drawer -->
+  @if (isAiDrawerOpen()) {
+    <div class="ai-backdrop" (click)="toggleAiDrawer()">
+      <aside class="ai-drawer" (click)="$event.stopPropagation()">
+        <header class="ai-drawer-header">
+          <div class="ai-header-title">
+            <span class="ai-badge">✦ INTELLIGENCE</span>
+            <h3>Field Assistant</h3>
+          </div>
+          <button type="button" class="btn-close-ai" (click)="toggleAiDrawer()" aria-label="Close AI drawer">✕</button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="ai-tabs">
+          <button
+            type="button"
+            class="ai-tab"
+            [class.active]="aiActiveTab() === 'chat'"
+            (click)="setAiTab('chat')"
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            class="ai-tab"
+            [class.active]="aiActiveTab() === 'search'"
+            (click)="setAiTab('search')"
+          >
+            Search
+          </button>
+          <button
+            type="button"
+            class="ai-tab"
+            [class.active]="aiActiveTab() === 'stats'"
+            (click)="setAiTab('stats')"
+          >
+            Stats
+          </button>
+        </nav>
+
+        <!-- Tab 1: AI Chat -->
+        @if (aiActiveTab() === 'chat') {
+          <div class="ai-tab-body ai-chat-container">
+            <div class="ai-chat-stream">
+              @for (msg of aiMessages(); track $index) {
+                <div class="ai-chat-bubble" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+                  <div class="bubble-meta">
+                    <span class="mono-label">{{ msg.role === 'user' ? '@' + username() : 'Roamly AI' }}</span>
+                  </div>
+                  <p class="bubble-text">{{ msg.content }}</p>
+                </div>
+              }
+              @if (aiChatLoading()) {
+                <div class="ai-chat-bubble assistant ai-loading-bubble">
+                  <span class="spinner"></span>
+                  <span class="mono-label">Pondering travel notes…</span>
+                </div>
+              }
+            </div>
+
+            @if (aiChatError()) {
+              <div class="note note-warn">{{ aiChatError() }}</div>
+            }
+
+            <form class="ai-input-form" (ngSubmit)="sendAiChat()">
+              <input
+                type="text"
+                placeholder="Ask about destinations, hidden gems, or tips…"
+                [value]="aiChatInput()"
+                (input)="aiChatInput.set($any($event.target).value)"
+                [disabled]="aiChatLoading()"
+              />
+              <button type="submit" class="btn-ink" [disabled]="aiChatLoading() || !aiChatInput().trim()">
+                Send →
+              </button>
+            </form>
+          </div>
+        }
+
+        <!-- Tab 2: Semantic Search Across Posts -->
+        @if (aiActiveTab() === 'search') {
+          <div class="ai-tab-body ai-search-container">
+            <div class="ai-search-box">
+              <input
+                type="text"
+                placeholder="Search queries (e.g. 'best quiet coffee shops' or 'alpine trails')…"
+                [value]="aiSearchQuery()"
+                (input)="aiSearchQuery.set($any($event.target).value)"
+                (keydown.enter)="$event.preventDefault(); runAiSearch()"
+              />
+              <button type="button" class="btn-ink" (click)="runAiSearch()" [disabled]="aiSearchLoading()">
+                @if (aiSearchLoading()) {
+                  <span class="spinner"></span>
+                } @else {
+                  Search
+                }
+              </button>
+            </div>
+
+            <div class="ai-search-results">
+              @if (aiSearchLoading()) {
+                <div class="state">
+                  <span class="spinner"></span>
+                  <span class="mono-label">Searching stories…</span>
+                </div>
+              }
+
+              @if (!aiSearchLoading() && aiSearchSearched() && aiSearchResults().length === 0) {
+                <div class="state">
+                  <p class="state-title">No matching entries</p>
+                  <p>Try broader terms or another destination name.</p>
+                </div>
+              }
+
+              @if (!aiSearchLoading() && aiSearchResults().length > 0) {
+                <ul class="ai-results-list">
+                  @for (item of aiSearchResults(); track item.id || $index) {
+                    <li class="ai-result-card" (click)="selectPostFromAiSearch(item)">
+                      <div class="result-header">
+                        <span class="entry-no">#{{ item.id }}</span>
+                        @if (item.location) {
+                          <span class="entry-place">↳ {{ item.location }}</span>
+                        }
+                      </div>
+                      <h4 class="result-title">{{ item.title || 'Untitled note' }}</h4>
+                      <p class="result-summary">{{ item.summary || item.content }}</p>
+                      <span class="result-author">By {{ item.author || item.username || 'traveller' }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Tab 3: Database & Community Stats -->
+        @if (aiActiveTab() === 'stats') {
+          <div class="ai-tab-body ai-stats-container">
+            @if (aiStatsLoading()) {
+              <div class="state">
+                <span class="spinner"></span>
+                <span class="mono-label">Calculating stats…</span>
+              </div>
+            }
+
+            @if (!aiStatsLoading() && aiStats(); as stats) {
+              <div class="ai-stats-grid">
+                <div class="ai-stat-box">
+                  <span class="mono-label">Total Entries</span>
+                  <p class="ai-stat-number">{{ stats.totalPosts ?? stats['postsCount'] ?? posts().length }}</p>
+                </div>
+                <div class="ai-stat-box">
+                  <span class="mono-label">Roamers Registered</span>
+                  <p class="ai-stat-number">{{ stats.totalUsers ?? stats['usersCount'] ?? '10+' }}</p>
+                </div>
+                <div class="ai-stat-box">
+                  <span class="mono-label">Photographs Logged</span>
+                  <p class="ai-stat-number">{{ stats.totalImages ?? stats['imagesCount'] ?? '25+' }}</p>
+                </div>
+              </div>
+
+              <div class="sidebar-foot" style="margin-top: 2rem;">
+                <p>Data compiled by the backend AI analytics engine in real-time.</p>
+              </div>
+            }
+
+            <button type="button" class="btn-ghost full" (click)="loadAiStats()" [disabled]="aiStatsLoading()" style="margin-top: 1.5rem;">
+              Refresh Analytics ↻
+            </button>
+          </div>
+        }
+      </aside>
+    </div>
+  }
+
+  <!-- Floating Quick AI Button (Bottom Right) -->
+  <button
+    type="button"
+    class="ai-fab"
+    (click)="toggleAiDrawer()"
+    [attr.aria-label]="isAiDrawerOpen() ? 'Close AI Field Assistant' : 'Open AI Field Assistant'"
+  >
+    ✦ AI
+  </button>
+
+  <footer class="colophon">
+    <span class="mono-label">Roamly · printed on the internet · {{ username() }}'s copy</span>
+  </footer>
+</div>
