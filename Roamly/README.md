@@ -1,59 +1,33 @@
-# Roamly
+# Roamly Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.2.
+This directory contains the Angular frontend for Roamly, a full-stack travel journal application.
 
-## Development server
+## Prerequisites
 
-To start a local development server, run:
+- Node.js
+- npm
+- Angular CLI 22
+- The Roamly backend running at `http://localhost:8081`
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Setup
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open `http://localhost:4200`.
 
-```bash
-ng generate --help
-```
+## Scripts
 
-## Building
+| Command | Purpose |
+| --- | --- |
+| `npm start` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run watch` | Build in development mode and watch for changes |
+| `npm test` | Run Vitest unit tests |
+| `npm run serve:ssr:roamly` | Serve the SSR build |
 
-To build the project run:
+The application uses route guards for authenticated pages and a JWT HTTP interceptor for backend requests. API endpoints are configured in the Angular services under `src/app/services/`.
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+See the repository-level `README.md` for full-stack setup, database configuration, and backend instructions.
